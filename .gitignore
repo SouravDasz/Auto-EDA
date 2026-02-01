@@ -1,0 +1,16 @@
+
+# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+venv/
+.env
+
+# User uploads & generated files
+uploads/
+app/static/plots/
+
+# OS
+Thumbs.db
+.DS_Store
