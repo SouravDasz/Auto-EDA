@@ -39,6 +39,7 @@ def cleanup_uploaded_file(file_path, delay=60):
         except Exception:
             pass
 
+
 def cleanup_generated_files(files, delay=15):
     """Delete generated plot files after delay"""
     time.sleep(delay)
@@ -48,6 +49,41 @@ def cleanup_generated_files(files, delay=15):
                 os.remove(f)
             except Exception:
                 pass
+
+
+# ================= AUTO CLEANUP (GLOBAL, TIME-BASED) =================
+def cleanup_old_files(folder_path, max_age_seconds):
+    """
+    Delete files older than max_age_seconds
+    """
+    if not os.path.exists(folder_path):
+        return
+
+    now = time.time()
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        try:
+            if os.path.isfile(file_path):
+                if now - os.path.getmtime(file_path) > max_age_seconds:
+                    os.remove(file_path)
+        except Exception:
+            pass
+
+
+def periodic_cleanup(app_root, interval=300):
+    """
+    Periodically cleans uploads and plots folders
+    """
+    while True:
+        time.sleep(interval)
+
+        uploads_path = os.path.join(app_root, UPLOAD_FOLDER)
+        plots_path = os.path.join(app_root, "static", "plots")
+
+        # delete files older than 15 minutes
+        cleanup_old_files(uploads_path, 900)
+        cleanup_old_files(plots_path, 900)
+
 
 # ================= FILE UPLOAD =================
 @file_page.route("/fill_upload", methods=["GET", "POST"])
@@ -144,7 +180,8 @@ def EDA(filename):
             if df[target_column].nunique() == 2:
                 target_list = df[target_column].value_counts().tolist()
         else:
-            sns.histplot(df[target_column], kde=True, color=sns.color_palette(theme_palette)[0])
+            sns.histplot(df[target_column], kde=True,
+                         color=sns.color_palette(theme_palette)[0])
 
         t_name = f"target_{uuid.uuid4().hex}.png"
         t_path = os.path.join(plot_folder, t_name)
@@ -173,11 +210,12 @@ def EDA(filename):
             if is_categorical:
                 if df[col].nunique() > 20:
                     plt.close()
-                    continue  # skip high-cardinality categorical
+                    continue
                 sns.countplot(x=df[col], palette=theme_palette)
                 plt.xticks(rotation=45)
             elif pd.api.types.is_numeric_dtype(df[col]):
-                sns.histplot(df[col], kde=True, color=sns.color_palette(theme_palette)[0])
+                sns.histplot(df[col], kde=True,
+                             color=sns.color_palette(theme_palette)[0])
             else:
                 plt.close()
                 continue
@@ -201,7 +239,8 @@ def EDA(filename):
 
     for c1, c2 in combinations(numerical_cols, 2):
         plt.figure(figsize=(6, 4))
-        sns.scatterplot(x=df[c1], y=df[c2], color=sns.color_palette(theme_palette)[0])
+        sns.scatterplot(x=df[c1], y=df[c2],
+                        color=sns.color_palette(theme_palette)[0])
         b_name = f"bivar_{uuid.uuid4().hex}.png"
         b_path = os.path.join(plot_folder, b_name)
         plt.savefig(b_path, bbox_inches="tight")
@@ -220,7 +259,8 @@ def EDA(filename):
             if col == target_column:
                 continue
             plt.figure(figsize=(6, 4))
-            sns.scatterplot(x=df[col], y=df[target_column], color=sns.color_palette(theme_palette)[0])
+            sns.scatterplot(x=df[col], y=df[target_column],
+                            color=sns.color_palette(theme_palette)[0])
             tb_name = f"target_bivar_{uuid.uuid4().hex}.png"
             tb_path = os.path.join(plot_folder, tb_name)
             plt.savefig(tb_path, bbox_inches="tight")
@@ -243,6 +283,7 @@ def EDA(filename):
         h_path = os.path.join(plot_folder, h_name)
         plt.savefig(h_path, bbox_inches="tight")
         plt.close()
+
         generated_files.append(h_path)
         heatmap_url = url_for("static", filename=f"plots/{h_name}")
 
@@ -254,10 +295,15 @@ def EDA(filename):
         Q1 = df[col].quantile(0.25)
         Q3 = df[col].quantile(0.75)
         IQR = Q3 - Q1
+
         lower = Q1 - 1.5 * IQR
         upper = Q3 + 1.5 * IQR
 
-        outlier_info.append({"col": col, "lower_limit": lower, "upper_limit": upper})
+        outlier_info.append({
+            "col": col,
+            "lower_limit": lower,
+            "upper_limit": upper
+        })
 
         plt.figure(figsize=(6, 4))
         sns.boxplot(x=df[col], palette=theme_palette)
@@ -266,12 +312,25 @@ def EDA(filename):
         o_path = os.path.join(plot_folder, o_name)
         plt.savefig(o_path, bbox_inches="tight")
         plt.close()
-        generated_files.append(o_path)
-        outlier_plots.append({"col": col, "path": url_for("static", filename=f"plots/{o_name}")})
 
-    # ================= CLEANUP THREADS =================
-    threading.Thread(target=cleanup_uploaded_file, args=(file_path,), daemon=True).start()
-    threading.Thread(target=cleanup_generated_files, args=(generated_files,), daemon=True).start()
+        generated_files.append(o_path)
+        outlier_plots.append({
+            "col": col,
+            "path": url_for("static", filename=f"plots/{o_name}")
+        })
+
+    # ================= CLEANUP THREADS (PER REQUEST) =================
+    threading.Thread(
+        target=cleanup_uploaded_file,
+        args=(file_path,),
+        daemon=True
+    ).start()
+
+    threading.Thread(
+        target=cleanup_generated_files,
+        args=(generated_files,),
+        daemon=True
+    ).start()
 
     # ================= RENDER =================
     return render_template(
