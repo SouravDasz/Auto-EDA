@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Tailwind CSS (NO defer) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <title>{% block title %}Auto EDA | Professional Data Intelligence{% endblock %}</title>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="bg-[#f8fafc] text-slate-900">
+
+    <nav class="fixed top-0 w-full z-50 glass border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+
+            <a href="/" class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <div class="w-4 h-4 border-2 border-white rounded-sm"></div>
+                </div>
+                <span class="text-2xl font-extrabold tracking-tight text-slate-900">
+                    Auto<span class="text-blue-600">EDA</span>
+                </span>
+            </a>
+
+            <div class="hidden md:flex space-x-10 font-medium text-slate-600">
+                <a href="#features" class="hover:text-blue-600 transition">Solutions</a>
+                <a href="#integrations" class="hover:text-blue-600 transition">Integrations</a>
+                <a href="/document" class="hover:text-blue-600 transition">Documentation</a>
+            </div>
+
+            <a href="/"
+               class="bg-blue-600 text-white px-6 py-2.5 rounded-full font-bold hover:bg-blue-700 shadow-md shadow-blue-200 transition active:scale-95">
+                Launch App
+            </a>
+        </div>
+    </nav>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="py-12 px-6 border-t border-slate-200 text-center">
+        <p class="text-slate-500 text-sm">
+            © 2026 Auto EDA — The future of rapid data analysis.
+        </p>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

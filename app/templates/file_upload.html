@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Data - Auto EDA{% endblock %}
+
+{% block content %}
+<div id="loader" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 backdrop-blur-md hidden transition-all duration-300">
+    <div class="relative flex items-center justify-center">
+        <div class="w-24 h-24 rounded-full border-4 border-slate-100 border-t-blue-600 animate-spin"></div>
+        <div class="absolute bg-blue-600 p-4 rounded-2xl shadow-xl shadow-blue-200 animate-pulse">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+        </div>
+    </div>
+    <h2 class="mt-8 text-xl font-black text-slate-900 tracking-tight">Processing Dataset...</h2>
+    <p class="mt-2 text-slate-500 font-medium animate-bounce">Analyzing patterns & generating report</p>
+</div>
+
+<div class="min-h-screen pt-32 pb-20 px-6 bg-slate-50/50">
+    <div class="max-w-4xl mx-auto">
+        
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Source Data</h1>
+                <p class="text-slate-500 mt-1">Upload the dataset you want to explore today.</p>
+            </div>
+            <div class="text-sm font-medium text-slate-400 bg-slate-100 px-4 py-2 rounded-lg border border-slate-200">
+                Storage Used: <span class="text-slate-900">0 / 100 MB</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 space-y-6">
+                <form action="{{ url_for('file_page.fill_upload') }}"
+                      method="POST"
+                      enctype="multipart/form-data"
+                      id="upload-form"
+                      class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
+
+                    <div id="drop-zone" class="relative group border-2 border-dashed border-slate-200 rounded-3xl p-16 transition-all hover:border-blue-500 hover:bg-blue-50/30 flex flex-col items-center justify-center cursor-pointer">
+                        <input type="file" name="file" id="file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".csv,.xlsx,.json">
+                        
+                        <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </div>
+                        
+                        <h3 class="text-lg font-bold text-slate-900" id="file-label">Click or drag dataset here</h3>
+                        <p class="text-slate-400 text-sm mt-1">CSV, XLSX, or JSON (Max 50MB)</p>
+                    </div>
+
+                    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <label class="block">
+                            <span class="text-sm font-semibold text-slate-700 ml-1">Project Name</span>
+                            <input type="text" name="project_name" placeholder="e.g. Sales Analysis Q1" class="mt-1 block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition">
+                        </label>
+
+                        <label class="block">
+                            <span class="text-sm font-semibold text-blue-600 ml-1 flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                                </svg>
+                                Target Column Name
+                            </span>
+                            <input type="text" name="target_column" placeholder="e.g. churn_status" class="mt-1 block w-full px-4 py-3 bg-blue-50/30 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition">
+                            <p class="text-[10px] text-slate-400 mt-1 ml-1">Leave blank for general unsupervised EDA</p>
+                        </label>
+                    </div>
+
+                    <div class="mt-10">
+                        <button type="button" onclick="startUpload()" class="w-full bg-blue-600 text-white text-center py-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all flex items-center justify-center space-x-2">
+                            <span>Initialize EDA Process</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="space-y-6">
+
+                <div class="relative bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="pointer-events-none">
+                        <h2 class="font-bold text-slate-900 mb-4">Recent Uploads</h2>
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-3 p-3 rounded-xl border border-slate-100">
+                                <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center font-bold text-xs">CSV</div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-slate-900 truncate">customer_churn.csv</p>
+                                    <p class="text-xs text-slate-400">2.4 MB • 2 mins ago</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3 p-3 rounded-xl border border-slate-100">
+                                <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold text-xs">XLS</div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-slate-900 truncate">quarterly_report.xlsx</p>
+                                    <p class="text-xs text-slate-400">8.1 MB • 1 hour ago</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="absolute inset-0 bg-white/70 flex items-center justify-center">
+                        <span class="text-slate-500 font-semibold text-sm">
+                            Feature Coming Soon
+                        </span>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-[2rem] text-white shadow-xl">
+                    <h3 class="font-bold mb-2">Pro Tip 💡</h3>
+                    <p class="text-blue-100 text-sm leading-relaxed">
+                        Specifying a <strong>Target Column</strong> allows the engine to calculate feature importance and correlation relative to your goal.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const fileInput = document.getElementById('file-input');
+    const fileLabel = document.getElementById('file-label');
+    const dropZone = document.getElementById('drop-zone');
+    const loader = document.getElementById('loader');
+    const uploadForm = document.getElementById('upload-form');
+
+    function startUpload() {
+        // Logic: Show loader only if a file is present
+        if (fileInput.files.length > 0) {
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+            
+            // Add a small delay to allow the CSS transition to feel smoother
+            setTimeout(() => {
+                uploadForm.submit();
+            }, 100);
+        } else {
+            // Visual feedback if no file is selected
+            dropZone.classList.add('border-red-500', 'bg-red-50');
+            fileLabel.innerText = "Please select a file first!";
+            fileLabel.classList.add('text-red-600');
+            
+            setTimeout(() => {
+                dropZone.classList.remove('border-red-500', 'bg-red-50');
+                fileLabel.innerText = "Click or drag dataset here";
+                fileLabel.classList.remove('text-red-600');
+            }, 2000);
+        }
+    }
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            fileLabel.innerText = e.target.files[0].name;
+            fileLabel.classList.add('text-blue-600');
+            dropZone.classList.add('border-blue-500', 'bg-blue-50/50');
+        }
+    });
+
+    // Drag and Drop Effects
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-blue-500', 'bg-blue-50/50');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50/50');
+        }, false);
+    });
+</script>
+{% endblock %}

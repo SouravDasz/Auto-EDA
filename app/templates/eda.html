@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen pt-16 pb-20 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-100 via-slate-50 to-blue-50 font-sans antialiased text-slate-900">
+    <div class="max-w-6xl mx-auto px-4 md:px-0">
+        
+        <div class="bg-white/80 backdrop-blur-xl shadow-2xl shadow-slate-200/50 border border-white rounded-[2.5rem] p-8 md:p-16 overflow-hidden">
+            
+            <header class="text-center mb-20 relative">
+                <div class="absolute inset-0 -top-10 flex justify-center opacity-20 blur-3xl pointer-events-none">
+                    <div class="w-64 h-32 bg-blue-400 rounded-full"></div>
+                </div>
+                <p class="inline-block px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-black tracking-[0.2em] uppercase mb-6 relative">
+                    Auto EDA Report
+                </p>
+                <h1 class="text-5xl md:text-7xl font-black text-slate-900 tracking-tight leading-none mb-6">
+                    {{ p_name }}
+                </h1>
+                <div class="h-1.5 w-24 bg-gradient-to-r from-blue-600 to-indigo-600 mx-auto rounded-full"></div>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-20">
+                <div class="group relative overflow-hidden rounded-3xl border border-slate-200 p-8 hover:border-blue-400 transition-all duration-300 bg-white">
+                    <p class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest group-hover:text-blue-500 transition-colors">Dataset Shape</p>
+                    <h3 class="text-5xl font-mono font-bold text-slate-800 tracking-tighter">{{ shape }}</h3>
+                    <div class="absolute bottom-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+                        <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"></path></svg>
+                    </div>
+                </div>
+                <div class="group relative overflow-hidden rounded-3xl border border-red-100 p-8 hover:border-red-400 transition-all duration-300 bg-red-50/30">
+                    <p class="text-[10px] font-black text-red-400 uppercase mb-2 tracking-widest">Total Missing Values</p>
+                    <h3 class="text-5xl font-mono font-bold text-red-600 tracking-tighter">{{ missing }}</h3>
+                    <div class="absolute bottom-0 right-0 p-4 opacity-10">
+                        <svg class="w-16 h-16 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                    </div>
+                </div>
+            </div>
+
+            <section class="mb-24">
+                <div class="flex items-center space-x-4 mb-10">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    </div>
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tight">Target Analysis</h2>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+                    <div class="lg:col-span-7 space-y-8">
+                        {% for plot in target_plots %}
+                        <div class="group bg-slate-50 p-3 rounded-[2rem] border border-slate-100 hover:bg-white hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500">
+                            <img src="{{ plot }}" alt="Target Plot" class="w-full rounded-[1.5rem] mix-blend-multiply">
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-8">
+                        <div class="p-8 rounded-3xl border shadow-sm {% if target_type == 'Object' %} bg-gradient-to-br from-indigo-500 to-blue-600 text-white border-transparent {% else %} bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-transparent {% endif %}">
+                            <h3 class="font-bold text-xl mb-2">Target Type: {{ target_type }}</h3>
+                            <p class="text-sm opacity-90 leading-relaxed">The system identified a <strong>{{ 'Classification' if target_type == 'Object' else 'Regression' }}</strong> pattern in your target variable.</p>
+                        </div>
+
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Distribution Summary</p>
+                            <div class="space-y-3">
+                                {% for item in target_info %}
+                                <div class="flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                                    <span class="font-semibold text-slate-700">{{ item.label }}</span>
+                                    <span class="px-3 py-1 rounded-lg bg-blue-50 font-mono text-sm font-bold text-blue-600">{{ item.count }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        {% if target_list and target_list|length == 2 %}
+                            {% set ratio = (target_list[0] / target_list[1]) if target_list[0] > target_list[1] else (target_list[1] / target_list[0]) %}
+                            <div class="flex items-center space-x-3 p-5 rounded-2xl border-2 {{ 'bg-red-50/50 border-red-100 text-red-700' if ratio >= 2 else 'bg-emerald-50/50 border-emerald-100 text-emerald-700' }}">
+                                <span class="text-lg">{{ '⚠️' if ratio >= 2 else '✅' }}</span>
+                                <span class="text-sm font-black uppercase tracking-tight">{{ 'Unbalanced' if ratio >= 2 else 'Balanced' }} Data Distribution</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="mb-24">
+                <div class="flex items-center space-x-4 mb-10">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                    </div>
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tight">Statistical Summary</h2>
+                </div>
+                <div class="describe-table-wrapper group overflow-x-auto rounded-[2rem] border border-slate-200 bg-white hover:shadow-xl transition-shadow duration-500">
+                    {{ describe_table | safe }}
+                </div>
+            </section>
+
+            <section class="mb-24">
+                <div class="flex items-center space-x-4 mb-10">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-white shadow-lg shadow-slate-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                    </div>
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tight">Feature Dictionary</h2>
+                </div>
+                <div class="overflow-hidden rounded-[2rem] border border-slate-200 shadow-sm bg-white">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/50">
+                                <th class="px-8 py-5 text-[10px] font-black uppercase text-slate-400">Column Name</th>
+                                <th class="px-8 py-5 text-[10px] font-black uppercase text-slate-400">Non-Null Count</th>
+                                <th class="px-8 py-5 text-[10px] font-black uppercase text-slate-400 text-right">Dtype</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for col in columns_info %}
+                            <tr class="group hover:bg-blue-50/30 transition-colors">
+                                <td class="px-8 py-5 font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{{ col.name }}</td>
+                                <td class="px-8 py-5 font-mono text-sm text-slate-500">{{ col.non_null }}</td>
+                                <td class="px-8 py-5 text-right">
+                                    <span class="inline-block bg-slate-100 group-hover:bg-blue-100 group-hover:text-blue-700 px-3 py-1 rounded-full text-[10px] uppercase font-bold text-slate-500 transition-colors">
+                                        {{ col.dtype }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="mb-24">
+                <div class="flex items-center space-x-4 mb-12">
+                    <div class="w-12 h-12 rounded-2xl bg-rose-500 flex items-center justify-center text-white shadow-lg shadow-rose-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tight">Univariate Distributions</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    {% for feat in feature_plots %}
+                    <div class="group">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <span class="w-6 h-1 bg-rose-500 rounded-full group-hover:w-10 transition-all duration-300"></span>
+                            <h4 class="font-mono font-black text-slate-500 uppercase text-xs tracking-widest">{{ feat.name }}</h4>
+                        </div>
+                        <div class="bg-white p-4 rounded-[2rem] border border-slate-100 group-hover:border-rose-200 group-hover:shadow-2xl group-hover:shadow-rose-100/50 transition-all duration-500">
+                            <img src="{{ feat.path }}" alt="{{ feat.name }}" class="w-full rounded-xl group-hover:scale-[1.02] transition-transform duration-500">
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="mb-24">
+                <div class="flex items-center space-x-4 mb-12">
+                    <div class="w-12 h-12 rounded-2xl bg-violet-600 flex items-center justify-center text-white shadow-lg shadow-violet-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tight">Bivariate Analysis</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    {% for plot in bivariate_plots %}
+                    <div class="group">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <span class="w-6 h-1 bg-violet-600 rounded-full group-hover:w-10 transition-all duration-300"></span>
+                            <h4 class="font-mono font-black text-slate-500 uppercase text-xs tracking-widest">{{ plot.pair }}</h4>
+                        </div>
+                        <div class="bg-white p-4 rounded-[2rem] border border-slate-100 group-hover:border-violet-200 group-hover:shadow-2xl group-hover:shadow-violet-100/50 transition-all duration-500">
+                            <img src="{{ plot.path }}" alt="{{ plot.pair }}" class="w-full rounded-xl group-hover:scale-[1.02] transition-transform duration-500">
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% if target_type == "Number" and target_bivariate %}
+            <section class="mb-24">
+                <div class="flex items-center space-x-4 mb-12">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                    </div>
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tight">Feature vs Target</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    {% for plot in target_bivariate %}
+                    <div class="group">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <span class="w-6 h-1 bg-emerald-500 rounded-full group-hover:w-10 transition-all duration-300"></span>
+                            <h4 class="font-mono font-black text-slate-500 uppercase text-xs tracking-widest">{{ plot.name }} vs Target</h4>
+                        </div>
+                        <div class="bg-white p-4 rounded-[2rem] border border-slate-100 group-hover:border-emerald-200 group-hover:shadow-2xl group-hover:shadow-emerald-100/50 transition-all duration-500">
+                            <img src="{{ plot.path }}" alt="{{ plot.name }}" class="w-full rounded-xl">
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+
+            {% if has_heatmap %}
+            <section class="mb-24">
+                <div class="flex items-center space-x-4 mb-8">
+                    <div class="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tight">Correlation Heatmap</h2>
+                </div>
+
+                <div class="mb-8 p-6 rounded-2xl bg-orange-50 border border-orange-100 flex items-start space-x-4">
+                    <span class="text-xl">💡</span>
+                    <p class="text-orange-800 text-sm leading-relaxed">
+                        <strong>Note:</strong> Categorical variables are excluded. This map represents Spearman/Pearson coefficients for <strong>numerical data</strong> only.
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-100 border border-slate-100">
+                    <img src="{{ heatmap_url }}" alt="Correlation Heatmap" class="w-full rounded-2xl">
+                </div>
+            </section>
+            {% endif %}
+
+            {% if outlier_plots %}
+            <section class="mb-24">
+                <div class="flex items-center space-x-4 mb-10">
+                    <div class="w-12 h-12 rounded-2xl bg-pink-600 flex items-center justify-center text-white shadow-lg shadow-pink-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tight">Outlier Detection</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {% for outlier in outlier_plots %}
+                    <div class="bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100">
+                        <h3 class="font-black text-slate-700 text-sm uppercase tracking-widest mb-4 flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-pink-500 mr-2"></span>
+                            {{ outlier.col }}
+                        </h3>
+                        <img src="{{ outlier.path }}" class="rounded-2xl shadow-sm mb-4 bg-white">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-white p-3 rounded-xl border border-slate-100">
+                                <p class="text-[9px] font-bold text-slate-400 uppercase">Lower Limit</p>
+                                <p class="font-mono text-xs font-bold text-slate-700">{{ outlier_info[loop.index0].lower_limit }}</p>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border border-slate-100">
+                                <p class="text-[9px] font-bold text-slate-400 uppercase">Upper Limit</p>
+                                <p class="font-mono text-xs font-bold text-slate-700">{{ outlier_info[loop.index0].upper_limit }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+            <div class="mt-16 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="/fill_upload" 
+                   class="flex items-center justify-center px-8 py-4 w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl transition-all duration-300 group">
+                    <svg class="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Upload
+                </a>
+                
+                <a href="/" 
+                   class="flex items-center justify-center px-8 py-4 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 hover:shadow-blue-300 transition-all duration-300 group">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    Return Home
+                </a>
+            </div>
+
+            <footer class="mt-20 pt-10 border-t border-slate-100 text-center">
+                ```
+
+<!-- ### Key Changes Made:
+* **Back Button:** Points to `/fill_upload`. It uses a subtle slate-gray theme to act as a secondary action.
+* **Home Button:** Points to `/`. It uses the primary blue theme with a shadow to highlight it as a main navigation point.
+* **Responsiveness:** On mobile devices, the buttons will stack vertically for better tap targets; on larger screens, they sit side-by-side.
+* **Interactivity:** Added slight hover animations (the "Back" arrow nudges left on hover) to enhance the user experience.
+
+Would you like me to help you integrate a "Download PDF" button for this report as well? -->
+
+            <footer class="mt-20 pt-10 border-t border-slate-100 text-center">
+                <div class="flex flex-col items-center space-y-4">
+                    <div class="flex space-x-2">
+                        <div class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></div>
+                        <div class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse delay-75"></div>
+                        <div class="w-2 h-2 rounded-full bg-violet-600 animate-pulse delay-150"></div>
+                    </div>
+                    <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.5em]">
+                        Verified Report &bull; Auto EDA Engine 2026
+                    </p>
+                </div>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Table Styling Overrides */
+    .describe-table-wrapper table { 
+        width: 100%; 
+        border-collapse: separate; 
+        border-spacing: 0;
+    }
+    .describe-table-wrapper th { 
+        background: #f8fafc; 
+        padding: 1.25rem 1rem; 
+        text-align: left; 
+        font-size: 0.65rem; 
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #64748b; 
+        border-bottom: 1px solid #e2e8f0; 
+    }
+    .describe-table-wrapper td { 
+        padding: 1.25rem 1rem; 
+        border-bottom: 1px solid #f1f5f9; 
+        font-family: 'JetBrains Mono', ui-monospace, monospace; 
+        font-size: 0.8rem;
+        color: #334155; 
+        transition: all 0.2s ease;
+    }
+    .describe-table-wrapper tr:hover td {
+        background-color: #f1f5f9;
+        color: #2563eb;
+    }
+    .describe-table-wrapper tr:last-child td {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
