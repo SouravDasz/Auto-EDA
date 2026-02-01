@@ -30,22 +30,24 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def cleanup_file(file_paths, delay=60):
-    """
-    Delete uploaded file(s) after delay (seconds).
-    file_paths can be a string (single file) or list of files.
-    """
+def cleanup_uploaded_file(file_path, delay=60):
+    """Delete uploaded file after delay"""
     time.sleep(delay)
-    if isinstance(file_paths, str):
-        file_paths = [file_paths]
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except Exception:
+            pass
 
-    for f in file_paths:
+def cleanup_generated_files(files, delay=15):
+    """Delete generated plot files after delay"""
+    time.sleep(delay)
+    for f in files:
         if os.path.exists(f):
             try:
                 os.remove(f)
             except Exception:
                 pass
-
 
 # ================= FILE UPLOAD =================
 @file_page.route("/fill_upload", methods=["GET", "POST"])
@@ -54,8 +56,12 @@ def fill_upload():
     os.makedirs(upload_dir, exist_ok=True)
 
     if request.method == "POST":
-        file = request.files.get("file")
-        if not file or file.filename == "":
+        if "file" not in request.files:
+            flash("No file part found", "error")
+            return redirect(url_for("file_page.fill_upload"))
+
+        file = request.files["file"]
+        if file.filename == "":
             flash("No file selected", "error")
             return redirect(url_for("file_page.fill_upload"))
 
@@ -82,12 +88,11 @@ def EDA(filename):
     upload_dir = os.path.join(current_app.root_path, UPLOAD_FOLDER)
     file_path = os.path.join(upload_dir, filename)
 
-    # ======== REDIRECT IF FILE MISSING ========
     if not os.path.exists(file_path):
-        flash("Uploaded file is no longer available. Please upload again.", "error")
+        flash("Uploaded file no longer exists. Upload again.", "error")
         return redirect(url_for("file_page.fill_upload"))
 
-    # -------- LOAD DATA --------
+    # Load data
     if filename.endswith(".csv"):
         df = pd.read_csv(file_path)
     elif filename.endswith(".xlsx"):
@@ -95,7 +100,7 @@ def EDA(filename):
     elif filename.endswith(".json"):
         df = pd.read_json(file_path)
     else:
-        return "Unsupported file", 400
+        return "Unsupported file type", 400
 
     project_name = session.get("project_name", "EDA Report")
     target_column = session.get("target_column")
@@ -113,18 +118,16 @@ def EDA(filename):
         for i, col in enumerate(df.columns)
     ]
 
-    # -------- PLOT SETUP --------
+    # Plot setup
     plot_folder = os.path.join(current_app.static_folder, "plots")
     os.makedirs(plot_folder, exist_ok=True)
-
     generated_files = []
+
     palettes = ["magma", "plasma", "mako", "viridis", "rocket", "turbo", "inferno"]
-    x= random.randint(0,len(palettes)-1)
-    # 🎨 ONE RANDOM PALETTE PER UPLOAD
     theme_palette = random.choice(palettes)
     sns.set_palette(theme_palette)
 
-    # ================= TARGET =================
+    # ================= TARGET PLOTS =================
     target_plots, target_info, target_list = [], [], []
     target_type = "Not Provided"
 
@@ -136,8 +139,8 @@ def EDA(filename):
             target_info.append({"label": label, "count": int(count)})
 
         plt.figure(figsize=(6, 4))
-        if dtype == "object":
-            sns.countplot(x=df[target_column], palette=palettes[x])
+        if dtype == "object" or df[target_column].nunique() <= 20:
+            sns.countplot(x=df[target_column], palette=theme_palette)
             if df[target_column].nunique() == 2:
                 target_list = df[target_column].value_counts().tolist()
         else:
@@ -151,12 +154,12 @@ def EDA(filename):
         generated_files.append(t_path)
         target_plots.append(url_for("static", filename=f"plots/{t_name}"))
 
-    # ================= DESCRIBE =================
-    describe_table = df.describe().round(2).to_html(
+    # ================= DESCRIBE TABLE =================
+    describe_table = df.describe(include='all').round(2).to_html(
         classes="w-full text-sm border-collapse", border=0
     )
 
-    # ================= UNIVARIATE =================
+    # ================= UNIVARIATE PLOTS =================
     feature_plots = []
 
     for col in df.columns:
@@ -165,8 +168,13 @@ def EDA(filename):
 
         try:
             plt.figure(figsize=(6, 4))
-            if df[col].dtype == "object" and df[col].nunique() <= 20:
-                sns.countplot(x=df[col], palette=palettes[x])
+            is_categorical = df[col].dtype == "object" or df[col].nunique() <= 20
+
+            if is_categorical:
+                if df[col].nunique() > 20:
+                    plt.close()
+                    continue  # skip high-cardinality categorical
+                sns.countplot(x=df[col], palette=theme_palette)
                 plt.xticks(rotation=45)
             elif pd.api.types.is_numeric_dtype(df[col]):
                 sns.histplot(df[col], kde=True, color=sns.color_palette(theme_palette)[0])
@@ -187,18 +195,13 @@ def EDA(filename):
         except Exception:
             plt.close()
 
-    # ================= BIVARIATE =================
+    # ================= BIVARIATE NUMERIC PLOTS =================
     numerical_cols = df.select_dtypes(include="number").columns.tolist()
     bivariate_plots = []
 
     for c1, c2 in combinations(numerical_cols, 2):
         plt.figure(figsize=(6, 4))
-        sns.scatterplot(
-            x=df[c1],
-            y=df[c2],
-            color=sns.color_palette(theme_palette)[0]
-        )
-
+        sns.scatterplot(x=df[c1], y=df[c2], color=sns.color_palette(theme_palette)[0])
         b_name = f"bivar_{uuid.uuid4().hex}.png"
         b_path = os.path.join(plot_folder, b_name)
         plt.savefig(b_path, bbox_inches="tight")
@@ -210,21 +213,14 @@ def EDA(filename):
             "path": url_for("static", filename=f"plots/{b_name}")
         })
 
-    # ================= TARGET vs FEATURES =================
+    # ================= TARGET vs NUMERIC FEATURES =================
     target_bivariate = []
-
     if target_column in numerical_cols:
         for col in numerical_cols:
             if col == target_column:
                 continue
-
             plt.figure(figsize=(6, 4))
-            sns.scatterplot(
-                x=df[col],
-                y=df[target_column],
-                color=sns.color_palette(theme_palette)[0]
-            )
-
+            sns.scatterplot(x=df[col], y=df[target_column], color=sns.color_palette(theme_palette)[0])
             tb_name = f"target_bivar_{uuid.uuid4().hex}.png"
             tb_path = os.path.join(plot_folder, tb_name)
             plt.savefig(tb_path, bbox_inches="tight")
@@ -240,21 +236,13 @@ def EDA(filename):
     heatmap_url = None
     if len(numerical_cols) >= 2:
         plt.figure(figsize=(10, 8))
-        sns.heatmap(
-            df[numerical_cols].corr(),
-            annot=True,
-            fmt=".2f",
-            cmap=theme_palette,
-            linewidths=0.5,
-            square=True
-        )
+        sns.heatmap(df[numerical_cols].corr(), annot=True, fmt=".2f",
+                    cmap=theme_palette, linewidths=0.5, square=True)
         plt.title("Correlation Heatmap (Numerical Features)")
-
         h_name = f"heatmap_{uuid.uuid4().hex}.png"
         h_path = os.path.join(plot_folder, h_name)
         plt.savefig(h_path, bbox_inches="tight")
         plt.close()
-
         generated_files.append(h_path)
         heatmap_url = url_for("static", filename=f"plots/{h_name}")
 
@@ -269,31 +257,21 @@ def EDA(filename):
         lower = Q1 - 1.5 * IQR
         upper = Q3 + 1.5 * IQR
 
-        outlier_info.append({
-            "col": col,
-            "lower_limit": lower,
-            "upper_limit": upper
-        })
+        outlier_info.append({"col": col, "lower_limit": lower, "upper_limit": upper})
 
-        # Boxplot
         plt.figure(figsize=(6, 4))
         sns.boxplot(x=df[col], palette=theme_palette)
         plt.title(f"Outlier Detection: {col}")
-
         o_name = f"outlier_{uuid.uuid4().hex}.png"
         o_path = os.path.join(plot_folder, o_name)
         plt.savefig(o_path, bbox_inches="tight")
         plt.close()
-
         generated_files.append(o_path)
-        outlier_plots.append({
-            "col": col,
-            "path": url_for("static", filename=f"plots/{o_name}")
-        })
+        outlier_plots.append({"col": col, "path": url_for("static", filename=f"plots/{o_name}")})
 
     # ================= CLEANUP THREADS =================
-    threading.Thread(target=cleanup_file, args=(file_path, 60), daemon=True).start()
-    threading.Thread(target=cleanup_file, args=(generated_files, 15), daemon=True).start()
+    threading.Thread(target=cleanup_uploaded_file, args=(file_path,), daemon=True).start()
+    threading.Thread(target=cleanup_generated_files, args=(generated_files,), daemon=True).start()
 
     # ================= RENDER =================
     return render_template(
@@ -302,7 +280,7 @@ def EDA(filename):
         shape=shape,
         missing=missing,
         columns_info=columns_info,
-        target_type=target_type,
+        target_type=df[session['target_column']].dtype,
         target_plots=target_plots,
         target_list=target_list,
         target_info=target_info,
@@ -310,8 +288,8 @@ def EDA(filename):
         feature_plots=feature_plots,
         bivariate_plots=bivariate_plots,
         target_bivariate=target_bivariate,
-        heatmap_url=heatmap_url,
         outlier_info=outlier_info,
         outlier_plots=outlier_plots,
+        heatmap_url=heatmap_url,
         has_heatmap=True if heatmap_url else False
     )

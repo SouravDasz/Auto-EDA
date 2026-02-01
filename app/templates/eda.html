@@ -56,7 +56,7 @@
                     <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-8">
                         <div class="p-8 rounded-3xl border shadow-sm {% if target_type == 'Object' %} bg-gradient-to-br from-indigo-500 to-blue-600 text-white border-transparent {% else %} bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-transparent {% endif %}">
                             <h3 class="font-bold text-xl mb-2">Target Type: {{ target_type }}</h3>
-                            <p class="text-sm opacity-90 leading-relaxed">The system identified a <strong>{{ 'Classification' if target_type == 'Object' else 'Regression' }}</strong> pattern in your target variable.</p>
+                            <p class="text-sm opacity-90 leading-relaxed">The system identified a <strong>{{ 'Classification' if target_type == 'str' else 'Regression' }}</strong> pattern in your target variable.</p>
                         </div>
 
                         <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
